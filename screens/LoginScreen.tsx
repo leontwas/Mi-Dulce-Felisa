@@ -19,23 +19,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth(); // Mover useAuth aquí
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor, ingresa tu correo y contraseña');
+      Alert.alert('Campos vacíos', 'Por favor, ingresa tu correo y contraseña');
       return;
     }
 
     setIsLoading(true);
     try {
       await login(email, password);
-      navigation.navigate('MainTabs');
+      // Volver a la pantalla anterior (MainTabs)
+      navigation.goBack();
     } catch (error: any) {
       let errorMessage = 'Ocurrió un error al iniciar sesión';
       
+      // Manejo específico de errores de Firebase
       if (error.code) {
         switch (error.code) {
+          case 'auth/invalid-credential':
+            errorMessage = 'Correo o contraseña incorrectos';
+            break;
           case 'auth/invalid-email':
             errorMessage = 'Correo electrónico inválido';
             break;
@@ -45,8 +50,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           case 'auth/wrong-password':
             errorMessage = 'Contraseña incorrecta';
             break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Demasiados intentos fallidos. Intenta más tarde';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'Esta cuenta ha sido deshabilitada';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = 'Error de conexión. Verifica tu internet';
+            break;
           default:
-            errorMessage = error.message;
+            errorMessage = error.message || 'Error desconocido';
         }
       }
       
@@ -60,8 +74,37 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     navigation.navigate('Register');
   };
 
-  const handleForgotPassword = () => {
-    Alert.alert('Recuperar Contraseña', 'Funcionalidad próximamente');
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert(
+        'Correo requerido',
+        'Por favor ingresa tu correo electrónico primero',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Recuperar Contraseña',
+      `¿Enviar enlace de recuperación a ${email}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Enviar',
+          onPress: async () => {
+            try {
+              await resetPassword(email);
+              Alert.alert(
+                'Correo enviado',
+                'Revisa tu bandeja de entrada para restablecer tu contraseña'
+              );
+            } catch {
+              Alert.alert('Error', 'No se pudo enviar el correo de recuperación');
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -70,35 +113,41 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <Text style={styles.title}>Mi Dulce Felisa</Text>
+      <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
       
       <TextInput
         style={styles.input}
         placeholder="Correo electrónico"
+        placeholderTextColor="#999"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        autoComplete="email"
         editable={!isLoading}
       />
       
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
+        placeholderTextColor="#999"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        autoComplete="password"
         editable={!isLoading}
       />
       
       <TouchableOpacity 
         style={styles.forgotPasswordButton}
         onPress={handleForgotPassword}
+        disabled={isLoading}
       >
         <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
       </TouchableOpacity>
       
       <TouchableOpacity 
-        style={styles.loginButton}
+        style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
         onPress={handleLogin}
         disabled={isLoading}
       >
@@ -112,7 +161,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         onPress={handleRegister}
         disabled={isLoading}
       >
-        <Text style={styles.registerText}>Registrarse</Text>
+        <Text style={styles.registerText}>
+          ¿No tienes cuenta? <Text style={styles.registerTextBold}>Regístrate</Text>
+        </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
@@ -126,11 +177,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 10,
     color: '#FF69B4',
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#666',
   },
   input: {
     borderWidth: 1,
@@ -138,13 +195,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
+    fontSize: 16,
   },
   forgotPasswordButton: {
     alignItems: 'flex-end',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   forgotPasswordText: {
     color: '#FF69B4',
+    fontSize: 14,
   },
   loginButton: {
     backgroundColor: '#FF69B4',
@@ -153,14 +212,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  loginButtonDisabled: {
+    backgroundColor: '#FFB3D9',
+    opacity: 0.7,
+  },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   registerButton: {
     alignItems: 'center',
+    marginTop: 10,
   },
   registerText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  registerTextBold: {
     color: '#FF69B4',
     fontWeight: 'bold',
   },

@@ -38,58 +38,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      const userData: User = {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || 'Usuario',
-        email: firebaseUser.email || ''
-      };
-      
-      setUser(userData);
-    } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-      throw error;
-    }
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
+   
+    const userData: User = {
+      id: firebaseUser.uid,
+      name: firebaseUser.displayName || 'Usuario',
+      email: firebaseUser.email || ''
+    };
+   
+    setUser(userData);
   };
 
   const logout = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      throw error;
-    }
+    await signOut(auth);
+    setUser(null);
   };
 
   const register = async (email: string, password: string, name: string) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      const userData: User = {
-        id: firebaseUser.uid,
-        name: name,
-        email: firebaseUser.email || ''
-      };
-      
-      setUser(userData);
-    } catch (error) {
-      console.error('Error al registrar usuario:', error);
-      throw error;
-    }
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
+   
+    const userData: User = {
+      id: firebaseUser.uid,
+      name: name,
+      email: firebaseUser.email || ''
+    };
+   
+    setUser(userData);
   };
 
   const resetPassword = async (email: string) => {
-    try {
-      await sendPasswordResetEmail(auth, email);
-    } catch (error) {
-      console.error('Error al restablecer contraseña:', error);
-      throw error;
-    }
+    await sendPasswordResetEmail(auth, email);
   };
 
   return (

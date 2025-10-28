@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { NavigatorScreenParams } from '@react-navigation/native';
 import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
-
 // Importar pantallas
 import AboutScreen from '../screens/AboutScreen';
 import CartScreen from '../screens/CartScreen';
@@ -14,21 +14,19 @@ import ProductsScreen from '../screens/ProductsScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 
 // Definir tipos para los parámetros de navegación
-export type RootStackParamList = {
-  MainTabs: undefined;
-  ProductDetail: { cakeId: string };
-  Login: undefined;
-  Register: undefined;
-  Carrito: undefined;
-  Contacto: undefined;
-};
-
 export type MainTabParamList = {
   Home: undefined;
   Productos: undefined;
   Contacto: undefined;
   'Quienes Somos': undefined;
   Carrito: undefined;
+};
+
+export type RootStackParamList = {
+  MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
+  ProductDetail: { cakeId: string };
+  Login: undefined;
+  Register: undefined;
 };
 
 // Tipos de navegación
@@ -42,14 +40,14 @@ function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: string;
+          let iconName: keyof typeof Ionicons.glyphMap;
 
           switch (route.name) {
             case 'Home':
               iconName = focused ? 'home' : 'home-outline';
               break;
             case 'Productos':
-              iconName = focused ? 'cake' : 'cake-outline';
+              iconName = focused ? 'fast-food' : 'fast-food-outline';
               break;
             case 'Contacto':
               iconName = focused ? 'mail' : 'mail-outline';
@@ -64,7 +62,7 @@ function MainTabNavigator() {
               iconName = 'help';
           }
 
-          return <Ionicons name={iconName as any} size={size} color={color} />;
+          return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#FF69B4',
         tabBarInactiveTintColor: 'gray',

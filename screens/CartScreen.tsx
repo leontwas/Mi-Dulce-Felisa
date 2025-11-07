@@ -1,9 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { CartItem } from '../types';
+
+declare const window: any;
 
 const CartScreen: React.FC = () => {
   const { cart, removeFromCart, clearCart, addToCart } = useCart();
@@ -14,14 +16,29 @@ const CartScreen: React.FC = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const handleCheckout = () => {
-    if (cart.length === 0) {
-      Alert.alert('Carrito vacío', 'Agrega productos antes de finalizar la compra');
-      return;
-    }
 
-    if (!user) {
-      // Si no hay usuario, navegar al login
+const handleCheckout = () => {
+  // Verificar si el carrito está vacío
+  if (cart.length === 0) {
+    if (Platform.OS === 'web') {
+      window.alert('Agrega productos antes de finalizar la compra');
+    } else {
+      Alert.alert('Carrito vacío', 'Agrega productos antes de finalizar la compra');
+    }
+    return;
+  }
+
+  // Verificar si el usuario está logueado
+  if (!user) {
+    if (Platform.OS === 'web') {
+      const confirmar = window.confirm('Debes iniciar sesión para finalizar tu compra');
+      if (confirmar) {
+        const parent = navigation.getParent();
+        if (parent) {
+          parent.navigate('Login');
+        }
+      }
+    } else {
       Alert.alert(
         'Iniciar sesión',
         'Debes iniciar sesión para finalizar tu compra',
@@ -38,24 +55,36 @@ const CartScreen: React.FC = () => {
           }
         ]
       );
-    } else {
-      // Si hay usuario, proceder con la compra
-      Alert.alert(
-        'Finalizar compra',
-        `Total a pagar: $${calculateTotal()}\n¿Deseas confirmar tu pedido?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Confirmar',
-            onPress: () => {
-              Alert.alert('¡Pedido confirmado!', 'Tu pedido ha sido procesado exitosamente');
-              clearCart();
-            }
-          }
-        ]
-      );
     }
-  };
+    return;
+  }
+
+  // Si hay usuario, proceder con la compra
+  if (Platform.OS === 'web') {
+    const confirmar = window.confirm(
+      `Total a pagar: $${calculateTotal()}\n¿Deseas confirmar tu pedido?`
+    );
+    if (confirmar) {
+      window.alert('Tu pedido ha sido procesado exitosamente');
+      clearCart();
+    }
+  } else {
+    Alert.alert(
+      'Finalizar compra',
+      `Total a pagar: $${calculateTotal()}\n¿Deseas confirmar tu pedido?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: () => {
+            Alert.alert('¡Pedido confirmado!', 'Tu pedido ha sido procesado exitosamente');
+            clearCart();
+          }
+        }
+      ]
+    );
+  }
+};
 
   const renderCartItem = ({ item }: { item: CartItem }) => (
     <View style={styles.cartItem}>

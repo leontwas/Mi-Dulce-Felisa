@@ -19,7 +19,7 @@ const CAKES: Cake[] = [
     name: 'Torta de Chocolate',
     price: 3500,
     description: 'Deliciosa torta de chocolate con cobertura de ganache',
-    image: require('../assets/images/chocolate-cake.jpg')
+    image: require('../assets/images/01_Bisnike.png')
   },
   {
     id: '2',

@@ -23,11 +23,28 @@ const CAKES: Cake[] = [
   },
   {
     id: '2',
-    name: 'Torta de Vainilla',
+    name: 'Torta de Frutilla',
     price: 3200,
     description: 'Suave torta de vainilla con crema pastelera',
-    image: require('../assets/images/vanilla-cake.jpg')
+    image: require('../assets/images/02_Frutilla.png')
   },
+  {
+    id: '3',
+    name: 'Torta de Chocolate',
+    price: 4000,
+    description: 'Deliciosa torta de chocolate con cobertura de ganache',
+    image: require('../assets/images/03_FrutillaYMerengue.png')
+  },
+  {
+    id: '4',
+    name: 'Torta de Chocolate',
+    price: 3500,
+    description: 'Deliciosa torta de chocolate con cobertura de ganache',
+    image: require('../assets/images/04_Anime.png')
+  },
+
+
+
 ];
 
 type ProductsScreenProps = BottomTabScreenProps<MainTabParamList, 'Productos'>;
@@ -140,7 +157,7 @@ const styles = StyleSheet.create({
   },
   cakeImage: {
     width: 150,
-    height: 150,
+    height: 200,
     borderRadius: 10,
   },
   cakeName: {

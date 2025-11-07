@@ -1,4 +1,4 @@
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -11,9 +11,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { MainTabParamList } from '../navigation/AppNavigator';
 
-type ContactScreenProps = NativeStackScreenProps<RootStackParamList, 'Contacto'>;
+type ContactScreenProps = BottomTabScreenProps<MainTabParamList, 'Contacto'>;
 
 const ContactScreen: React.FC<ContactScreenProps> = () => {
   const [name, setName] = useState('');
@@ -61,7 +61,7 @@ const ContactScreen: React.FC<ContactScreenProps> = () => {
     formData.append('message', message);
 
     try {
-      const response = await fetch('https://formspree.io/f/xovlewpb', {
+      const response = await fetch('https://formspree.io/f/xdkynknn', { //'https://formspree.io/f/xovlewpb' para mostrar que funciona
         method: 'POST',
         headers: {
           'Accept': 'application/json'

@@ -1,4 +1,5 @@
-import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useRef } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -6,15 +7,19 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 250;
-const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40; // 20px padding a cada lado
+const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40;
 
 const HomeScreen: React.FC = () => {
+  const flatListRef = useRef<FlatList>(null);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+
   const images: number[] = [
     require('../assets/images/01_Bisnike.png'),
     require('../assets/images/02_Frutilla.png'),
@@ -75,6 +80,28 @@ const HomeScreen: React.FC = () => {
     require('../assets/images/57_FrutillasYDulce.png'),
     require('../assets/images/58_Traje.png'),
   ];
+
+  const scrollToIndex = (index: number) => {
+    flatListRef.current?.scrollToIndex({ animated: true, index });
+    setCurrentIndex(index);
+  };
+
+  const handleNext = () => {
+    const nextIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
+    scrollToIndex(nextIndex);
+  };
+
+  const handlePrev = () => {
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
+    scrollToIndex(prevIndex);
+  };
+
+  const onScroll = (event: any) => {
+    const slideSize = event.nativeEvent.layoutMeasurement.width;
+    const index = event.nativeEvent.contentOffset.x / slideSize;
+    const roundIndex = Math.round(index);
+    setCurrentIndex(roundIndex);
+  };
   
   return (
     <ScrollView style={styles.container}>
@@ -83,6 +110,7 @@ const HomeScreen: React.FC = () => {
       {/* Carrusel de Imágenes */}
       <View style={styles.carouselContainer}>
         <FlatList
+          ref={flatListRef}
           data={images}
           horizontal
           pagingEnabled
@@ -91,6 +119,8 @@ const HomeScreen: React.FC = () => {
           snapToInterval={SCREEN_WIDTH}
           decelerationRate="fast"
           contentContainerStyle={styles.flatListContent}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           renderItem={({ item }: { item: number }) => (
             <View style={styles.imageContainer}>
               <Image
@@ -101,6 +131,22 @@ const HomeScreen: React.FC = () => {
             </View>
           )}
         />
+        
+        {/* Flecha Izquierda */}
+        <TouchableOpacity
+          style={[styles.arrowButton, styles.leftArrow]}
+          onPress={handlePrev}
+        >
+          <Ionicons name="chevron-back" size={30} color="#FF69B4" />
+        </TouchableOpacity>
+
+        {/* Flecha Derecha */}
+        <TouchableOpacity
+          style={[styles.arrowButton, styles.rightArrow]}
+          onPress={handleNext}
+        >
+          <Ionicons name="chevron-forward" size={30} color="#FF69B4" />
+        </TouchableOpacity>
       </View>
       
       {/* Imagen adicional entre carrusel y mapa */}
@@ -162,7 +208,8 @@ const styles = StyleSheet.create({
   carouselContainer: {
     height: CAROUSEL_HEIGHT,
     marginBottom: 20,
-    backgroundColor: '#f5f5f5', // Fondo opcional para ver mejor el contenedor
+    backgroundColor: '#f5f5f5',
+    position: 'relative',
   },
   flatListContent: {
     alignItems: 'center',
@@ -179,6 +226,29 @@ const styles = StyleSheet.create({
     height: CAROUSEL_HEIGHT,
     borderRadius: 10,
     backgroundColor: '#f0f0f0',
+  },
+  arrowButton: {
+    position: 'absolute',
+    top: '50%',
+    transform: [{ translateY: -20 }],
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  leftArrow: {
+    left: 10,
+  },
+  rightArrow: {
+    right: 10,
   },
   middleImage: {
     width: '90%',

@@ -13,14 +13,28 @@ const CAKES: Cake[] = [
     name: 'Torta de Chocolate',
     price: 3500,
     description: 'Deliciosa torta de chocolate con cobertura de ganache',
-    image: require('../assets/images/chocolate-cake.jpg')
+    image: require('../assets/images/01_Bisnike.png')
   },
   {
     id: '2',
     name: 'Torta de Vainilla',
     price: 3200,
     description: 'Suave torta de vainilla con crema pastelera',
-    image: require('../assets/images/vanilla-cake.jpg')
+    image: require('../assets/images/02_Frutilla.png')
+  },
+  {
+    id: '3',
+    name: 'Torta de Chocolate',
+    price: 3200,
+    description: 'Suave torta de Chocolate con crema pastelera',
+    image: require('../assets/images/03_FrutillaYMerengue.png')
+  },
+  {
+    id: '4',
+    name: 'Torta de Vainilla',
+    price: 3200,
+    description: 'Suave torta de vainilla con crema pastelera',
+    image: require('../assets/images/04_Anime.png')
   },
 ];
 
@@ -97,7 +111,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 300,
+    height: 480,
     resizeMode: 'cover',
   },
   infoContainer: {

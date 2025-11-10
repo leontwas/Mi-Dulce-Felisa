@@ -19,7 +19,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, resetPassword } = useAuth(); // Mover useAuth aquí
+  const { login, resetPassword } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -30,8 +30,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
     try {
       await login(email, password);
-      // Volver a la pantalla anterior (MainTabs)
-      navigation.goBack();
+      // Mostrar mensaje de éxito
+      Alert.alert(
+        '¡Bienvenido! 🎉', 
+        'Has iniciado sesión correctamente',
+        [
+          {
+            text: 'Continuar',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
     } catch (error: any) {
       let errorMessage = 'Ocurrió un error al iniciar sesión';
       

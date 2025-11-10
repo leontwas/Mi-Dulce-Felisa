@@ -4,6 +4,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -81,6 +82,18 @@ const HomeScreen: React.FC = () => {
     require('../assets/images/58_Traje.png'),
   ];
 
+  const socialMedia = [
+    { name: 'Instagram', icon: 'logo-instagram', url: 'https://www.instagram.com/mi.dulce.felisa/?fbclid=IwY2xjawN-DXpleHRuA2FlbQIxMABicmlkETF6c2lKMXpYcG1zOVRzVHpSc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHoTtxOQ0iijZdsQX1SwlFeHtk_GC4MNLlgThqofjl2FCnl5Fd9MfSbxnlNOf_aem_Ftt39nMDXKLDHcxrBtLp7A', color: '#E4405F' },
+    { name: 'Facebook', icon: 'logo-facebook', url: 'https://facebook.com/midulcefelisa', color: '#1877F2' },
+    { name: 'WhatsApp', icon: 'logo-whatsapp', url: 'https://wa.me/5491122334455', color: '#25D366' },
+    { name: 'YouTube', icon: 'logo-youtube', url: 'https://youtube.com/@midulcefelisa', color: '#FF0000' },
+    { name: 'Telegram', icon: 'send', url: 'https://t.me/midulcefelisa', color: '#0088cc' },
+  ];
+
+  const handleSocialPress = (url: string) => {
+    Linking.openURL(url).catch(err => console.error("Error al abrir el enlace:", err));
+  };
+
   const scrollToIndex = (index: number) => {
     flatListRef.current?.scrollToIndex({ animated: true, index });
     setCurrentIndex(index);
@@ -107,7 +120,7 @@ const HomeScreen: React.FC = () => {
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Mi Dulce Felisa</Text>
      
-      {/* Carrusel de Imágenes */}
+      {/* Slide de Imágenes */}
       <View style={styles.carouselContainer}>
         <FlatList
           ref={flatListRef}
@@ -181,6 +194,24 @@ const HomeScreen: React.FC = () => {
       <Text style={styles.addressText}>
         Pasaje N°1 4433, Villa Udaondo, Ituzaingó, Provincia de Buenos Aires
       </Text>
+
+      {/* Redes Sociales */}
+      <View style={styles.socialContainer}>
+        <Text style={styles.socialTitle}>Seguinos en nuestras redes 💕</Text>
+        <View style={styles.socialIconsContainer}>
+          {socialMedia.map((social, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.socialButton, { backgroundColor: social.color }]}
+              onPress={() => handleSocialPress(social.url)}
+            >
+              <Ionicons name={social.icon as any} size={28} color="#FFF" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <Text style={styles.footer}>© 2025 Mi Dulce Felisa - Todos los derechos reservados</Text>
     </ScrollView>
   );
 };
@@ -273,7 +304,44 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     top: -20, 
     marginTop: 5,
-  }
+  },
+  socialContainer: {
+    marginTop: 10,
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  socialTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#FF69B4',
+  },
+  socialIconsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 15,
+  },
+  socialButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  footer: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#999',
+    marginVertical: 20,
+  },
 });
 
 export default HomeScreen;

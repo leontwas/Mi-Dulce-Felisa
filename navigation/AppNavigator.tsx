@@ -7,8 +7,10 @@ import React from 'react';
 import AboutScreen from '../screens/AboutScreen';
 import CartScreen from '../screens/CartScreen';
 import ContactScreen from '../screens/ContactScreen';
+import CustomCakeScreen from '../screens/CustomCakeScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
+import MoreScreen from '../screens/MoreScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import ProductsScreen from '../screens/ProductsScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -18,13 +20,15 @@ export type MainTabParamList = {
   Home: undefined;
   Productos: undefined;
   Contacto: undefined;
-  'Quienes Somos': undefined;
   Carrito: undefined;
+  'Más': undefined;
 };
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   ProductDetail: { cakeId: string };
+  About: undefined;
+  CustomCake: undefined;
   Login: undefined;
   Register: undefined;
 };
@@ -52,11 +56,11 @@ function MainTabNavigator() {
             case 'Contacto':
               iconName = focused ? 'mail' : 'mail-outline';
               break;
-            case 'Quienes Somos':
-              iconName = focused ? 'information-circle' : 'information-circle-outline';
-              break;
             case 'Carrito':
               iconName = focused ? 'cart' : 'cart-outline';
+              break;
+            case 'Más':
+              iconName = focused ? 'menu' : 'menu-outline';
               break;
             default:
               iconName = 'help';
@@ -71,8 +75,8 @@ function MainTabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Productos" component={ProductsScreen} />
       <Tab.Screen name="Contacto" component={ContactScreen} />
-      <Tab.Screen name="Quienes Somos" component={AboutScreen} />
       <Tab.Screen name="Carrito" component={CartScreen} />
+      <Tab.Screen name="Más" component={MoreScreen} />
     </Tab.Navigator>
   );
 }
@@ -89,6 +93,16 @@ export default function AppNavigator() {
         name="ProductDetail"
         component={ProductDetailScreen}
         options={{ title: 'Detalle del Producto' }}
+      />
+      <Stack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{ title: 'Quiénes Somos' }}
+      />
+      <Stack.Screen
+        name="CustomCake"
+        component={CustomCakeScreen}
+        options={{ title: 'Crea tu Torta' }}
       />
       <Stack.Screen
         name="Login"

@@ -25,17 +25,60 @@ const CAKES: Cake[] = [
   {
     id: '3',
     name: 'Torta de Chocolate',
-    price: 3200,
+    price: 4000,
     description: 'Suave torta de Chocolate con crema pastelera',
     image: require('../assets/images/03_FrutillaYMerengue.png')
   },
   {
     id: '4',
     name: 'Torta de Vainilla',
-    price: 3200,
+    price: 3500,
     description: 'Suave torta de vainilla con crema pastelera',
     image: require('../assets/images/04_Anime.png')
   },
+{
+    id: '5',
+    name: 'Torta de Vainilla',
+    price: 5500,
+    description: 'Suave torta de vainilla con crema pastelera',
+    image: require('../assets/images/05_Barbie.png')
+  },
+{
+    id: '6',
+    name: 'Torta de Vainilla',
+    price: 5000,
+    description: 'Suave torta de vainilla con crema pastelera',
+    image: require('../assets/images/06_BebesLlorones.png')
+  },
+{
+    id: '7',
+    name: 'Torta de Vainilla',
+    price: 6000,
+    description: 'Suave torta de vainilla con crema pastelera',
+    image: require('../assets/images/07_Comunion.png')
+  },
+  {
+    id: '8',
+    name: 'Torta de Vainilla',
+    price: 4500,
+    description: 'Suave torta de vainilla con crema pastelera',
+    image: require('../assets/images/08_EstrellasYBolasDisco.png')
+  },
+  {
+    id: '9',
+    name: 'Torta de Vainilla',
+    price: 5500,
+    description: 'Suave torta de vainilla con crema pastelera',
+    image: require('../assets/images/09_Hulk.png')
+  },
+{
+    id: '10',
+    name: 'Torta de Vainilla',
+    price: 3500,
+    description: 'Suave torta de vainilla con crema pastelera',
+    image: require('../assets/images/10_LaGranja.png')
+  },
+
 ];
 
 type ProductDetailScreenRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
@@ -111,7 +154,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 480,
+    height: 490,
     resizeMode: 'cover',
   },
   infoContainer: {

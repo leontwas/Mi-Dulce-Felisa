@@ -42,7 +42,48 @@ const CAKES: Cake[] = [
     description: 'Deliciosa torta de chocolate con cobertura de ganache',
     image: require('../assets/images/04_Anime.png')
   },
-
+  {
+    id: '5',
+    name: 'Torta de Vainilla',
+    price: 5500,
+    description: 'Deliciosa torta de vainilla con cobertura de crema batida',
+    image: require('../assets/images/05_Barbie.png')
+  },
+{
+    id: '6',
+    name: 'Torta de Vainilla',
+    price: 5000,
+    description: 'Deliciosa torta de Vainilla con cobertura de masa pan',
+    image: require('../assets/images/06_BebesLlorones.png')
+  },
+{
+    id: '7',
+    name: 'Torta de Vainilla',
+    price: 6000,
+    description: 'Deliciosa torta de Vainilla con cobertura de crema',
+    image: require('../assets/images/07_Comunion.png')
+  },
+{
+    id: '8',
+    name: 'Torta de Vainilla',
+    price: 4500,
+    description: 'Deliciosa torta de Vainilla con cobertura de masa pan',
+    image: require('../assets/images/08_EstrellasYBolasDisco.png')
+  },
+  {
+    id: '9',
+    name: 'Torta de Vainilla',
+    price: 5500,
+    description: 'Deliciosa torta de Vainilla con cobertura de masa pan',
+    image: require('../assets/images/09_Hulk.png')
+  },
+{
+    id: '10',
+    name: 'Torta de Vainilla',
+    price: 3500,
+    description: 'Deliciosa torta de vainilla con cobertura de crema batida',
+    image: require('../assets/images/10_LaGranja.png')
+  },
 
 
 ];

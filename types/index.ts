@@ -19,6 +19,20 @@ export interface User {
   email: string;
 }
 
+// Tipos para torta personalizada
+export interface CustomCakeData {
+  size: string;
+  servings: number;
+  fillings: string[];
+  frostings: string[];
+  decorations: string[];
+  message: string;
+  theme: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 // Tipos para contextos
 export interface CartContextType {
   cart: CartItem[];
@@ -32,5 +46,5 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>; 
+  resetPassword: (email: string) => Promise<void>;
 }

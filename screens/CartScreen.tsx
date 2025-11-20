@@ -19,19 +19,63 @@ const CartScreen: React.FC = () => {
   };
 
 
-const handleCheckout = async () => {
-  console.log('🚀 handleCheckout iniciado');
+// Función para enviar notificación al vendedor
+const sendVendorNotification = async (orderId: string, orderData: Order) => {
+  try {
+    const emailBody = `
+NUEVA ORDEN DE COMPRA
+=====================
 
+NÚMERO DE ORDEN: #${orderId}
+
+DATOS DEL CLIENTE:
+------------------
+Nombre: ${orderData.userName}
+Email: ${orderData.userEmail}
+ID Usuario: ${orderData.userId}
+
+DETALLES DEL PEDIDO:
+--------------------
+${orderData.items.map((item: any) =>
+  `• ${item.name} x${item.quantity} - $${item.price} c/u = $${item.price * item.quantity}`
+).join('\n')}
+
+TOTAL: $${orderData.total}
+
+Método de Pago: ${orderData.paymentMethod}
+Estado: ${orderData.status}
+Fecha: ${orderData.createdAt.toLocaleString('es-AR')}
+
+=====================
+    `;
+
+    const formData = new FormData();
+    formData.append('name', 'Sistema Mi Dulce Felisa');
+    formData.append('email', orderData.userEmail);
+    formData.append('message', emailBody);
+    formData.append('_subject', `Nueva Orden #${orderId} - $${orderData.total}`);
+
+    await fetch('https://formspree.io/f/xdkynknn', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json'
+      },
+      body: formData as any
+    });
+  } catch {
+    // Error silencioso
+  }
+};
+
+const handleCheckout = async () => {
   // Verificar si el carrito está vacío
   if (cart.length === 0) {
     Alert.alert('Carrito vacío', 'Agrega productos antes de finalizar la compra');
     return;
   }
-  console.log('✅ Carrito tiene items:', cart.length);
 
   // Verificar si el usuario está logueado
   if (!user) {
-    console.log('❌ Usuario NO logueado');
     setIsProcessing(false);
     Alert.alert(
       'Iniciar sesión',
@@ -51,22 +95,16 @@ const handleCheckout = async () => {
     );
     return;
   }
-  console.log('✅ Usuario logueado:', user.email);
-  console.log('✅ User ID:', user.id);
-  console.log('✅ User name:', user.name);
 
-  console.log('⏳ Cambiando isProcessing a true...');
   setIsProcessing(true);
 
   try {
     const total = calculateTotal();
-    console.log('💰 Total calculado:', total);
 
     // Crear descripción del pedido para MercadoPago
     const description = cart.map(item =>
       `${item.name} x${item.quantity}`
     ).join(', ');
-    console.log('📝 Descripción:', description);
 
     // Crear orden en Firebase (sin el campo image que causa problemas)
     const itemsForFirebase = cart.map(item => ({
@@ -88,9 +126,6 @@ const handleCheckout = async () => {
       createdAt: new Date(),
     };
 
-    console.log('📦 Datos de orden preparados:', JSON.stringify(orderData, null, 2));
-    console.log('🔥 Intentando guardar en Firebase...');
-
     // Agregar timeout para detectar problemas de conexión
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Timeout: Firebase no responde después de 10 segundos')), 10000)
@@ -99,12 +134,12 @@ const handleCheckout = async () => {
     const addDocPromise = addDoc(collection(db, 'orders'), orderData);
 
     const docRef = await Promise.race([addDocPromise, timeoutPromise]) as any;
-    console.log('✅ Orden creada exitosamente con ID:', docRef.id);
+
+    // Enviar notificación al vendedor
+    await sendVendorNotification(docRef.id, orderData);
 
     // Link de cobro de MercadoPago para Mi Dulce Felisa
     const mercadopagoUrl = 'https://link.mercadopago.com.ar/midulcefelisa';
-
-    console.log('URL de pago generada:', mercadopagoUrl);
 
     // Mostrar confirmación y opciones de pago
     Alert.alert(
@@ -128,8 +163,20 @@ const handleCheckout = async () => {
                       {
                         text: 'Entendido',
                         onPress: () => {
-                          clearCart();
-                          setIsProcessing(false);
+                          // Mostrar mensaje de confirmación de notificación al vendedor
+                          Alert.alert(
+                            '✅ Notificación Enviada',
+                            `Hemos enviado una notificación al vendedor con tu pedido #${docRef.id.substring(0, 8)}.\n\nEl vendedor se pondrá en contacto contigo pronto para coordinar la entrega.\n\n¡Gracias por tu compra!`,
+                            [
+                              {
+                                text: 'OK',
+                                onPress: () => {
+                                  clearCart();
+                                  setIsProcessing(false);
+                                }
+                              }
+                            ]
+                          );
                         }
                       }
                     ]
@@ -140,8 +187,7 @@ const handleCheckout = async () => {
                 clearCart();
                 setIsProcessing(false);
               }
-            } catch (error) {
-              console.error('Error al abrir MercadoPago:', error);
+            } catch {
               Alert.alert('Error', 'No se pudo abrir el link de pago');
               clearCart();
               setIsProcessing(false);
@@ -158,8 +204,20 @@ const handleCheckout = async () => {
                 {
                   text: 'OK',
                   onPress: () => {
-                    clearCart();
-                    setIsProcessing(false);
+                    // Mostrar mensaje de confirmación de notificación al vendedor
+                    Alert.alert(
+                      '✅ Notificación Enviada',
+                      `Hemos enviado una notificación al vendedor con tu pedido #${docRef.id.substring(0, 8)}.\n\nEl vendedor se pondrá en contacto contigo pronto para coordinar la entrega.\n\n¡Gracias por tu compra!`,
+                      [
+                        {
+                          text: 'OK',
+                          onPress: () => {
+                            clearCart();
+                            setIsProcessing(false);
+                          }
+                        }
+                      ]
+                    );
                   }
                 }
               ]
@@ -170,32 +228,35 @@ const handleCheckout = async () => {
           text: 'Cancelar',
           style: 'cancel',
           onPress: () => {
-            clearCart();
-            setIsProcessing(false);
+            // Mostrar mensaje de confirmación de notificación al vendedor
+            Alert.alert(
+              '✅ Notificación Enviada',
+              `Hemos enviado una notificación al vendedor con tu pedido #${docRef.id.substring(0, 8)}.\n\nEl vendedor se pondrá en contacto contigo pronto para coordinar la entrega y el pago.\n\n¡Gracias por tu compra!`,
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    clearCart();
+                    setIsProcessing(false);
+                  }
+                }
+              ]
+            );
           }
         }
       ]
     );
   } catch (error: any) {
-    console.error('❌ ERROR CAPTURADO:', error);
-    console.error('❌ Error mensaje:', error?.message);
-    console.error('❌ Error código:', error?.code);
-    console.error('❌ Error completo:', JSON.stringify(error, null, 2));
-
     Alert.alert(
       'Error al procesar pedido',
       `No se pudo crear tu pedido.\n\nDetalle: ${error?.message || error?.code || 'Error desconocido'}\n\nPor favor verifica tu conexión a internet e intenta nuevamente.`,
       [
         {
-          text: 'OK',
-          onPress: () => {
-            console.log('🔄 Usuario cerró el alert de error');
-          }
+          text: 'OK'
         }
       ]
     );
     setIsProcessing(false);
-    console.log('⏳ isProcessing cambiado a false después del error');
   }
 };
 

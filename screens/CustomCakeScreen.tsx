@@ -1,4 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -11,7 +14,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import { CustomCakeData } from '../types';
+
+type CustomCakeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CustomCake'>;
 
 // Opciones disponibles
 const SIZES = [
@@ -73,6 +79,8 @@ const DECORATIONS = [
 ];
 
 const CustomCakeScreen: React.FC = () => {
+  const navigation = useNavigation<CustomCakeScreenNavigationProp>();
+
   // Estados del formulario
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedCakeType, setSelectedCakeType] = useState('');
@@ -85,6 +93,33 @@ const CustomCakeScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Estados para el calendario de fecha de entrega
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Estados para opción de envío/retiro
+  const [deliveryOption, setDeliveryOption] = useState<'delivery' | 'pickup'>('pickup');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+
+  // Función para manejar el cambio de fecha
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setDeliveryDate(selectedDate);
+    }
+  };
+
+  // Función para formatear la fecha
+  const formatDate = (date: Date | undefined): string => {
+    if (!date) return 'Seleccionar fecha';
+    return date.toLocaleDateString('es-AR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   // Función para manejar selecciones múltiples con límite
   const toggleSelection = (
@@ -120,6 +155,21 @@ const CustomCakeScreen: React.FC = () => {
     }
     if (selectedFrostings.length === 0) {
       Alert.alert('Error', 'Por favor, selecciona al menos una cobertura');
+      return false;
+    }
+    if (!deliveryDate) {
+      Alert.alert('Error', 'Por favor, selecciona una fecha de entrega');
+      return false;
+    }
+    // Validar que la fecha no sea en el pasado
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (deliveryDate < today) {
+      Alert.alert('Error', 'La fecha de entrega no puede ser en el pasado');
+      return false;
+    }
+    if (deliveryOption === 'delivery' && !deliveryAddress) {
+      Alert.alert('Error', 'Por favor, ingresa la dirección de entrega');
       return false;
     }
     if (!name) {
@@ -172,6 +222,15 @@ Nombre: ${customCakeData.name}
 Email: ${customCakeData.email}
 Teléfono: ${customCakeData.phone || 'No proporcionado'}
 
+FECHA DE ENTREGA SOLICITADA:
+-----------------------------
+📅 ${deliveryDate ? formatDate(deliveryDate) : 'No especificada'}
+
+MODALIDAD DE ENTREGA:
+---------------------
+${deliveryOption === 'delivery' ? '🚚 Envío a domicilio' : '🏪 Retiro en tienda'}
+${deliveryOption === 'delivery' ? `Dirección: ${deliveryAddress}` : ''}
+
 DETALLES DE LA TORTA:
 ----------------------
 Tamaño: ${sizeData?.cm} cm (${customCakeData.servings} porciones)
@@ -192,6 +251,7 @@ Mensaje en la torta: ${customCakeData.message || 'Sin mensaje'}
 Temática: ${customCakeData.theme || 'No especificada'}
 
 ======================================
+NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular presupuesto.
     `;
 
     try {
@@ -212,8 +272,8 @@ Temática: ${customCakeData.theme || 'No especificada'}
 
       if (response.ok) {
         Alert.alert(
-          'Éxito',
-          'Tu solicitud ha sido enviada correctamente. Nos pondremos en contacto contigo pronto.',
+          '✅ Solicitud Enviada',
+          'Tu solicitud de torta personalizada ha sido enviada correctamente.\n\nNos pondremos en contacto contigo pronto para confirmar la disponibilidad y el presupuesto.\n\n¡Gracias por confiar en nosotros!',
           [
             {
               text: 'OK',
@@ -226,9 +286,16 @@ Temática: ${customCakeData.theme || 'No especificada'}
                 setSelectedDecorations([]);
                 setMessage('');
                 setTheme('');
+                setDeliveryDate(undefined);
+                setShowDatePicker(false);
+                setDeliveryOption('pickup');
+                setDeliveryAddress('');
                 setName('');
                 setEmail('');
                 setPhone('');
+
+                // Navegar al inicio
+                navigation.navigate('MainTabs', { screen: 'Home' });
               }
             }
           ]
@@ -238,8 +305,7 @@ Temática: ${customCakeData.theme || 'No especificada'}
         const errorMessage = responseData.error || 'Hubo un problema al enviar la solicitud';
         Alert.alert('Error', errorMessage);
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       Alert.alert('Error', 'No se pudo enviar la solicitud. Verifica tu conexión a internet');
     } finally {
       setIsSubmitting(false);
@@ -444,6 +510,112 @@ Temática: ${customCakeData.theme || 'No especificada'}
           />
         </View>
 
+        {/* Fecha de Entrega */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            <Ionicons name="calendar" size={20} color="#FF69B4" /> Fecha de Entrega *
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.datePickerButton,
+              deliveryDate && styles.datePickerButtonSelected
+            ]}
+            onPress={() => setShowDatePicker(true)}
+            disabled={isSubmitting}
+          >
+            <View style={styles.datePickerContent}>
+              <Ionicons
+                name="calendar-outline"
+                size={24}
+                color={deliveryDate ? "#FF69B4" : "#999"}
+              />
+              <Text style={[
+                styles.datePickerText,
+                deliveryDate && styles.datePickerTextSelected
+              ]}>
+                {formatDate(deliveryDate)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={deliveryDate || new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+        </View>
+
+        {/* Opción de Envío/Retiro */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            <Ionicons name="car" size={20} color="#FF69B4" /> Entrega *
+          </Text>
+          <View style={styles.deliveryOptionsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.deliveryOption,
+                deliveryOption === 'pickup' && styles.deliveryOptionSelected
+              ]}
+              onPress={() => setDeliveryOption('pickup')}
+              disabled={isSubmitting}
+            >
+              <Ionicons
+                name="storefront"
+                size={32}
+                color={deliveryOption === 'pickup' ? "#FF69B4" : "#999"}
+              />
+              <Text style={[
+                styles.deliveryOptionText,
+                deliveryOption === 'pickup' && styles.deliveryOptionTextSelected
+              ]}>
+                Retiro en tienda
+              </Text>
+              {deliveryOption === 'pickup' && (
+                <Ionicons name="checkmark-circle" size={24} color="#FF69B4" style={styles.checkmarkIcon} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.deliveryOption,
+                deliveryOption === 'delivery' && styles.deliveryOptionSelected
+              ]}
+              onPress={() => setDeliveryOption('delivery')}
+              disabled={isSubmitting}
+            >
+              <Ionicons
+                name="bicycle"
+                size={32}
+                color={deliveryOption === 'delivery' ? "#FF69B4" : "#999"}
+              />
+              <Text style={[
+                styles.deliveryOptionText,
+                deliveryOption === 'delivery' && styles.deliveryOptionTextSelected
+              ]}>
+                Envío a domicilio
+              </Text>
+              {deliveryOption === 'delivery' && (
+                <Ionicons name="checkmark-circle" size={24} color="#FF69B4" style={styles.checkmarkIcon} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {deliveryOption === 'delivery' && (
+            <TextInput
+              style={styles.input}
+              placeholder="Dirección de entrega *"
+              value={deliveryAddress}
+              onChangeText={setDeliveryAddress}
+              autoCapitalize="words"
+              editable={!isSubmitting}
+              multiline
+            />
+          )}
+        </View>
+
         {/* Datos de contacto */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -476,17 +648,46 @@ Temática: ${customCakeData.theme || 'No especificada'}
           />
         </View>
 
-        {/* Botón enviar */}
-        <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        >
-          <Text style={styles.submitButtonText}>
-            {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
-          </Text>
-          {!isSubmitting && <Ionicons name="send" size={20} color="#FFF" style={styles.submitIcon} />}
-        </TouchableOpacity>
+        {/* Botones de acción */}
+        <View style={styles.buttonContainer}>
+          {/* Botón cancelar */}
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => {
+              Alert.alert(
+                'Cancelar Solicitud',
+                '¿Estás seguro que deseas cancelar? Se perderán todos los datos ingresados.',
+                [
+                  {
+                    text: 'No, continuar',
+                    style: 'cancel'
+                  },
+                  {
+                    text: 'Sí, cancelar',
+                    style: 'destructive',
+                    onPress: () => navigation.navigate('MainTabs', { screen: 'Home' })
+                  }
+                ]
+              );
+            }}
+            disabled={isSubmitting}
+          >
+            <Ionicons name="close-circle" size={20} color="#FF6B6B" />
+            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+
+          {/* Botón enviar */}
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+            </Text>
+            {!isSubmitting && <Ionicons name="send" size={20} color="#FFF" style={styles.submitIcon} />}
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.footerNote}>
           * Campos obligatorios. Nos pondremos en contacto contigo para confirmar los detalles y el precio.
@@ -600,14 +801,101 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 16,
   },
+  datePickerButton: {
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 12,
+  },
+  datePickerButtonSelected: {
+    borderColor: '#FF69B4',
+    backgroundColor: '#FFE4F0',
+  },
+  datePickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: '#999',
+    marginLeft: 12,
+    flex: 1,
+  },
+  datePickerTextSelected: {
+    color: '#FF69B4',
+    fontWeight: '600',
+  },
+  deliveryOptionsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 15,
+  },
+  deliveryOption: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deliveryOptionSelected: {
+    borderColor: '#FF69B4',
+    backgroundColor: '#FFE4F0',
+  },
+  deliveryOptionText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  deliveryOptionTextSelected: {
+    color: '#FF69B4',
+    fontWeight: '600',
+  },
+  checkmarkIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    padding: 18,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  cancelButtonText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
   submitButton: {
+    flex: 1,
     backgroundColor: '#FF69B4',
     padding: 18,
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,

@@ -5,8 +5,9 @@ import {
   signInWithEmailAndPassword,
   signOut
 } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { auth } from '../config/firebaseConfig';
+import { auth, db } from '../config/firebaseConfig';
 import { AuthContextType, User } from '../types';
 
 const AuthContext = createContext<AuthContextType>({
@@ -40,14 +41,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
-   
-    const userData: User = {
-      id: firebaseUser.uid,
-      name: firebaseUser.displayName || 'Usuario',
-      email: firebaseUser.email || ''
-    };
-   
-    setUser(userData);
+
+    // Intentar cargar datos adicionales desde Firestore
+    try {
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      if (userDoc.exists()) {
+        const userDataFromFirestore = userDoc.data();
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: userDataFromFirestore.name || firebaseUser.displayName || 'Usuario',
+          email: firebaseUser.email || '',
+          phone: userDataFromFirestore.phone || undefined,
+          address: userDataFromFirestore.address || undefined
+        };
+        setUser(userData);
+      } else {
+        // Si no existe el documento en Firestore, usar datos básicos
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Usuario',
+          email: firebaseUser.email || ''
+        };
+        setUser(userData);
+      }
+    } catch {
+      const userData: User = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || 'Usuario',
+        email: firebaseUser.email || ''
+      };
+      setUser(userData);
+    }
   };
 
   const logout = async () => {
@@ -55,16 +79,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, phone?: string, address?: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
-   
+
     const userData: User = {
       id: firebaseUser.uid,
       name: name,
-      email: firebaseUser.email || ''
+      email: firebaseUser.email || '',
+      phone: phone,
+      address: address
     };
-   
+
+    // Guardar datos adicionales en Firestore
+    await setDoc(doc(db, 'users', firebaseUser.uid), {
+      name,
+      email: firebaseUser.email,
+      phone: phone || null,
+      address: address || null,
+      createdAt: new Date()
+    });
+
     setUser(userData);
   };
 

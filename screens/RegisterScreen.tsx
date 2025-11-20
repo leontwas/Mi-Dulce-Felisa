@@ -19,6 +19,8 @@ type RegisterScreenProps = NativeStackScreenProps<RootStackParamList, 'Register'
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +69,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-      await register(email, password, name);
+      await register(email, password, name, phone || undefined, address || undefined);
       Alert.alert('Registro Exitoso', 'Tu cuenta ha sido creada correctamente');
       navigation.navigate('MainTabs');
     } catch (error: any) {
@@ -125,7 +127,25 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           autoCapitalize="none"
           editable={!isLoading}
         />
-        
+
+        <TextInput
+          style={styles.input}
+          placeholder="Teléfono"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          editable={!isLoading}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Dirección (opcional)"
+          value={address}
+          onChangeText={setAddress}
+          autoCapitalize="words"
+          editable={!isLoading}
+        />
+
         <TextInput
           style={styles.input}
           placeholder="Contraseña"

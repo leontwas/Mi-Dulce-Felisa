@@ -4,6 +4,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import {
   View
 } from 'react-native';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
+import { useAuth } from '../context/AuthContext';
 
 type MoreScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Más'>,
@@ -30,36 +32,80 @@ interface MenuItem {
 }
 
 const MoreScreen: React.FC<Props> = ({ navigation }) => {
-  const menuItems: MenuItem[] = [
-    {
-      id: '1',
-      title: 'Iniciar Sesión',
-      icon: 'log-in',
-      screen: 'Login',
-      description: 'Accede a tu cuenta'
-    },
-    {
-      id: '2',
-      title: 'Registrarse',
-      icon: 'person-add',
-      screen: 'Register',
-      description: 'Crea una cuenta nueva'
-    },
-    {
-      id: '3',
-      title: 'Crea tu Torta',
-      icon: 'create',
-      screen: 'CustomCake',
-      description: 'Personaliza tu torta ideal'
-    },
-    {
-      id: '4',
-      title: '¿Quiénes Somos?',
-      icon: 'information-circle',
-      screen: 'About',
-      description: 'Conoce nuestra historia'
-    },
-  ];
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro que deseas cerrar sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              Alert.alert('Sesión Cerrada', 'Has cerrado sesión exitosamente');
+            } catch (error) {
+              Alert.alert('Error', 'No se pudo cerrar la sesión');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const menuItems: MenuItem[] = user
+    ? [
+        {
+          id: '3',
+          title: 'Crea tu Torta',
+          icon: 'create',
+          screen: 'CustomCake',
+          description: 'Personaliza tu torta ideal'
+        },
+        {
+          id: '4',
+          title: '¿Quiénes Somos?',
+          icon: 'information-circle',
+          screen: 'About',
+          description: 'Conoce nuestra historia'
+        },
+      ]
+    : [
+        {
+          id: '1',
+          title: 'Iniciar Sesión',
+          icon: 'log-in',
+          screen: 'Login',
+          description: 'Accede a tu cuenta'
+        },
+        {
+          id: '2',
+          title: 'Registrarse',
+          icon: 'person-add',
+          screen: 'Register',
+          description: 'Crea una cuenta nueva'
+        },
+        {
+          id: '3',
+          title: 'Crea tu Torta',
+          icon: 'create',
+          screen: 'CustomCake',
+          description: 'Personaliza tu torta ideal'
+        },
+        {
+          id: '4',
+          title: '¿Quiénes Somos?',
+          icon: 'information-circle',
+          screen: 'About',
+          description: 'Conoce nuestra historia'
+        },
+      ];
 
   const handleMenuPress = (screen: keyof RootStackParamList) => {
     navigation.navigate(screen as any);
@@ -69,8 +115,32 @@ const MoreScreen: React.FC<Props> = ({ navigation }) => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Más Opciones</Text>
-        <Text style={styles.headerSubtitle}>Explora más funcionalidades</Text>
+        <Text style={styles.headerSubtitle}>
+          {user ? `Hola, ${user.name}` : 'Explora más funcionalidades'}
+        </Text>
       </View>
+
+      {user && (
+        <View style={styles.userInfoContainer}>
+          <View style={styles.userInfoCard}>
+            <Ionicons name="person-circle" size={60} color="#FF69B4" />
+            <View style={styles.userDetails}>
+              <Text style={styles.userName}>{user.name}</Text>
+              <Text style={styles.userEmail}>{user.email}</Text>
+              {user.phone && <Text style={styles.userPhone}>📱 {user.phone}</Text>}
+              {user.address && <Text style={styles.userAddress}>📍 {user.address}</Text>}
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out" size={24} color="#FFF" />
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.menuContainer}>
         {menuItems.map((item) => (
@@ -121,6 +191,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFF',
     opacity: 0.9,
+  },
+  userInfoContainer: {
+    padding: 15,
+    paddingTop: 20,
+  },
+  userInfoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    alignItems: 'center',
+  },
+  userDetails: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 3,
+  },
+  userPhone: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 3,
+  },
+  userAddress: {
+    fontSize: 14,
+    color: '#666',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FF69B4',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
   menuContainer: {
     padding: 15,

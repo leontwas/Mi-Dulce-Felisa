@@ -91,7 +91,7 @@ const HomeScreen: React.FC = () => {
   ];
 
   const handleSocialPress = (url: string) => {
-    Linking.openURL(url).catch(err => console.error("Error al abrir el enlace:", err));
+    Linking.openURL(url).catch(() => {});
   };
 
   const scrollToIndex = (index: number) => {

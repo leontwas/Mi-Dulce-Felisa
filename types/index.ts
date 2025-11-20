@@ -33,6 +33,20 @@ export interface CustomCakeData {
   phone: string;
 }
 
+// Tipos para órdenes de compra
+export interface Order {
+  id?: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  items: CartItem[];
+  total: number;
+  status: 'pending' | 'paid' | 'cancelled';
+  paymentMethod?: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
 // Tipos para contextos
 export interface CartContextType {
   cart: CartItem[];

@@ -1,88 +1,201 @@
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
-import { Alert, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { addDoc, collection } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { Alert, FlatList, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { db } from '../config/firebaseConfig';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { CartItem } from '../types';
-
-declare const window: any;
+import { CartItem, Order } from '../types';
 
 const CartScreen: React.FC = () => {
   const { cart, removeFromCart, clearCart, addToCart } = useCart();
   const { user } = useAuth();
   const navigation = useNavigation();
+  const [isProcessing, setIsProcessing] = useState(false);
+
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
 
-const handleCheckout = () => {
+const handleCheckout = async () => {
+  console.log('🚀 handleCheckout iniciado');
+
   // Verificar si el carrito está vacío
   if (cart.length === 0) {
-    if (Platform.OS === 'web') {
-      window.alert('Agrega productos antes de finalizar la compra');
-    } else {
-      Alert.alert('Carrito vacío', 'Agrega productos antes de finalizar la compra');
-    }
+    Alert.alert('Carrito vacío', 'Agrega productos antes de finalizar la compra');
     return;
   }
+  console.log('✅ Carrito tiene items:', cart.length);
 
   // Verificar si el usuario está logueado
   if (!user) {
-    if (Platform.OS === 'web') {
-      const confirmar = window.confirm('Debes iniciar sesión para finalizar tu compra');
-      if (confirmar) {
-        const parent = navigation.getParent();
-        if (parent) {
-          parent.navigate('Login');
-        }
-      }
-    } else {
-      Alert.alert(
-        'Iniciar sesión',
-        'Debes iniciar sesión para finalizar tu compra',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Iniciar sesión',
-            onPress: () => {
-              const parent = navigation.getParent();
-              if (parent) {
-                parent.navigate('Login');
-              }
-            }
-          }
-        ]
-      );
-    }
-    return;
-  }
-
-  // Si hay usuario, proceder con la compra
-  if (Platform.OS === 'web') {
-    const confirmar = window.confirm(
-      `Total a pagar: $${calculateTotal()}\n¿Deseas confirmar tu pedido?`
-    );
-    if (confirmar) {
-      window.alert('Tu pedido ha sido procesado exitosamente');
-      clearCart();
-    }
-  } else {
+    console.log('❌ Usuario NO logueado');
+    setIsProcessing(false);
     Alert.alert(
-      'Finalizar compra',
-      `Total a pagar: $${calculateTotal()}\n¿Deseas confirmar tu pedido?`,
+      'Iniciar sesión',
+      'Debes iniciar sesión para finalizar tu compra',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Confirmar',
+          text: 'Iniciar sesión',
           onPress: () => {
-            Alert.alert('¡Pedido confirmado!', 'Tu pedido ha sido procesado exitosamente');
-            clearCart();
+            const parent = navigation.getParent();
+            if (parent) {
+              parent.navigate('Login');
+            }
           }
         }
       ]
     );
+    return;
+  }
+  console.log('✅ Usuario logueado:', user.email);
+  console.log('✅ User ID:', user.id);
+  console.log('✅ User name:', user.name);
+
+  console.log('⏳ Cambiando isProcessing a true...');
+  setIsProcessing(true);
+
+  try {
+    const total = calculateTotal();
+    console.log('💰 Total calculado:', total);
+
+    // Crear descripción del pedido para MercadoPago
+    const description = cart.map(item =>
+      `${item.name} x${item.quantity}`
+    ).join(', ');
+    console.log('📝 Descripción:', description);
+
+    // Crear orden en Firebase (sin el campo image que causa problemas)
+    const itemsForFirebase = cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      description: item.description
+    }));
+
+    const orderData: Order = {
+      userId: user?.id || 'unknown',
+      userName: user?.name || 'Usuario',
+      userEmail: user?.email || '',
+      items: itemsForFirebase as any,
+      total: total,
+      status: 'pending',
+      paymentMethod: 'MercadoPago',
+      createdAt: new Date(),
+    };
+
+    console.log('📦 Datos de orden preparados:', JSON.stringify(orderData, null, 2));
+    console.log('🔥 Intentando guardar en Firebase...');
+
+    // Agregar timeout para detectar problemas de conexión
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout: Firebase no responde después de 10 segundos')), 10000)
+    );
+
+    const addDocPromise = addDoc(collection(db, 'orders'), orderData);
+
+    const docRef = await Promise.race([addDocPromise, timeoutPromise]) as any;
+    console.log('✅ Orden creada exitosamente con ID:', docRef.id);
+
+    // Link de cobro de MercadoPago para Mi Dulce Felisa
+    const mercadopagoUrl = 'https://link.mercadopago.com.ar/midulcefelisa';
+
+    console.log('URL de pago generada:', mercadopagoUrl);
+
+    // Mostrar confirmación y opciones de pago
+    Alert.alert(
+      '✅ ¡Pedido Creado!',
+      `Pedido #${docRef.id.substring(0, 8)}\nTotal a pagar: $${total}\n\nProductos:\n${description}\n\n¿Cómo querés pagar?`,
+      [
+        {
+          text: 'Abrir MercadoPago',
+          onPress: async () => {
+            try {
+              const supported = await Linking.canOpenURL(mercadopagoUrl);
+              if (supported) {
+                await Linking.openURL(mercadopagoUrl);
+
+                // Mostrar instrucciones después de abrir MercadoPago
+                setTimeout(() => {
+                  Alert.alert(
+                    '💰 Instrucciones de Pago',
+                    `En MercadoPago, ingresá el monto a pagar:\n\n💵 TOTAL: $${total}\n\n⚠️ Importante:\n• Si sos el dueño de la cuenta, NO podrás pagarte a vos mismo\n• Compartí el link con quien vaya a pagar\n• O usá otra cuenta de MercadoPago`,
+                    [
+                      {
+                        text: 'Entendido',
+                        onPress: () => {
+                          clearCart();
+                          setIsProcessing(false);
+                        }
+                      }
+                    ]
+                  );
+                }, 1000);
+              } else {
+                Alert.alert('Error', 'No se pudo abrir MercadoPago');
+                clearCart();
+                setIsProcessing(false);
+              }
+            } catch (error) {
+              console.error('Error al abrir MercadoPago:', error);
+              Alert.alert('Error', 'No se pudo abrir el link de pago');
+              clearCart();
+              setIsProcessing(false);
+            }
+          }
+        },
+        {
+          text: 'Copiar Link',
+          onPress: () => {
+            Alert.alert(
+              '📋 Link de Pago',
+              `Link: ${mercadopagoUrl}\n\nTotal a pagar: $${total}\nProductos: ${description}\n\nCopiá este link y envialo a quien vaya a pagar.\n\n⚠️ Quien pague debe ingresar el monto manualmente en MercadoPago.`,
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    clearCart();
+                    setIsProcessing(false);
+                  }
+                }
+              ]
+            );
+          }
+        },
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+          onPress: () => {
+            clearCart();
+            setIsProcessing(false);
+          }
+        }
+      ]
+    );
+  } catch (error: any) {
+    console.error('❌ ERROR CAPTURADO:', error);
+    console.error('❌ Error mensaje:', error?.message);
+    console.error('❌ Error código:', error?.code);
+    console.error('❌ Error completo:', JSON.stringify(error, null, 2));
+
+    Alert.alert(
+      'Error al procesar pedido',
+      `No se pudo crear tu pedido.\n\nDetalle: ${error?.message || error?.code || 'Error desconocido'}\n\nPor favor verifica tu conexión a internet e intenta nuevamente.`,
+      [
+        {
+          text: 'OK',
+          onPress: () => {
+            console.log('🔄 Usuario cerró el alert de error');
+          }
+        }
+      ]
+    );
+    setIsProcessing(false);
+    console.log('⏳ isProcessing cambiado a false después del error');
   }
 };
 
@@ -118,7 +231,7 @@ const handleCheckout = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Carrito de Compras</Text>
-     
+
       <FlatList
         data={cart}
         renderItem={renderCartItem}
@@ -127,21 +240,24 @@ const handleCheckout = () => {
           <Text style={styles.emptyCartText}>Tu carrito está vacío 🛒</Text>
         }
       />
-     
+
       {cart.length > 0 && (
         <View style={styles.totalContainer}>
           <Text style={styles.totalText}>Total: $ {calculateTotal()}</Text>
-         
+
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
               <Text style={styles.buttonText}>Vaciar Carrito</Text>
             </TouchableOpacity>
-           
-            <TouchableOpacity 
-              style={styles.checkoutButton}
+
+            <TouchableOpacity
+              style={[styles.checkoutButton, isProcessing && styles.buttonDisabled]}
               onPress={handleCheckout}
+              disabled={isProcessing}
             >
-              <Text style={styles.buttonText}>Finalizar Compra</Text>
+              <Text style={styles.buttonText}>
+                {isProcessing ? 'Procesando...' : 'Pagar con MercadoPago'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -253,6 +369,10 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     flex: 1,
+  },
+  buttonDisabled: {
+    backgroundColor: '#CCC',
+    opacity: 0.7,
   },
   buttonText: {
     color: 'white',

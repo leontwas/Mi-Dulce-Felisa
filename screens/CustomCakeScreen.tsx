@@ -209,6 +209,7 @@ const CustomCakeScreen: React.FC = () => {
       name,
       email,
       phone,
+      deliveryOption,
     };
 
     // Formatear el mensaje para el email
@@ -907,7 +908,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   submitIcon: {

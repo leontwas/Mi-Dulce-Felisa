@@ -82,7 +82,8 @@ const ContactScreen: React.FC<ContactScreenProps> = () => {
         const errorMessage = responseData.error || 'Hubo un problema al enviar el mensaje';
         Alert.alert('Error', errorMessage);
       }
-    } catch {
+    } catch (error) {
+      console.error(error);
       Alert.alert('Error', 'No se pudo enviar el mensaje. Verifica tu conexión a internet');
     } finally {
       setIsSubmitting(false);

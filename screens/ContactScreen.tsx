@@ -1,5 +1,5 @@
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,16 +11,28 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 import { MainTabParamList } from '../navigation/AppNavigator';
 
 type ContactScreenProps = BottomTabScreenProps<MainTabParamList, 'Contacto'>;
 
 const ContactScreen: React.FC<ContactScreenProps> = () => {
+  const { user } = useAuth();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Autocompletar datos si el usuario está logueado
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+    }
+  }, [user]);
 
   const validateForm = (): boolean => {
     if (!name) {
@@ -54,22 +66,24 @@ const ContactScreen: React.FC<ContactScreenProps> = () => {
 
     setIsSubmitting(true);
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('email', email);
-    formData.append('phone', phone);
-    formData.append('message', message);
+    const formBody = JSON.stringify({
+      name,
+      email,
+      phone,
+      message
+    });
 
     try {
       const response = await fetch('https://formspree.io/f/xdkynknn', { //'https://formspree.io/f/xovlewpb' para mostrar que funciona
         method: 'POST',
         headers: {
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: formData
+        body: formBody
       });
 
-      const responseData = await response.json();
+      const responseData = await response.json() as { error?: string };
 
       if (response.ok) {
         Alert.alert('Éxito', 'Tu mensaje ha sido enviado correctamente');
@@ -98,61 +112,65 @@ const ContactScreen: React.FC<ContactScreenProps> = () => {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>Contáctanos</Text>
-        
+
         <TextInput
           style={styles.input}
           placeholder="Nombre Completo"
+          placeholderTextColor="#999"
           value={name}
           onChangeText={setName}
           autoCapitalize="words"
           editable={!isSubmitting}
         />
-        
+
         <TextInput
           style={styles.input}
           placeholder="Correo Electrónico"
+          placeholderTextColor="#999"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
           editable={!isSubmitting}
         />
-        
+
         <TextInput
           style={styles.input}
           placeholder="Teléfono (Opcional)"
+          placeholderTextColor="#999"
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
           editable={!isSubmitting}
         />
-        
+
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Tu Mensaje"
+          placeholderTextColor="#999"
           value={message}
           onChangeText={setMessage}
           multiline
           numberOfLines={4}
           editable={!isSubmitting}
         />
-        
+
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.button, styles.clearButton]}
             onPress={handleClear}
             disabled={isSubmitting}
           >
             <Text style={styles.buttonText}>Borrar</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.button, styles.submitButton]}
             onPress={handleSubmit}
             disabled={isSubmitting}

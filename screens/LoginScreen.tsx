@@ -1,4 +1,4 @@
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -10,11 +10,9 @@ import {
   TouchableOpacity
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { RootStackParamList } from '../navigation/AppNavigator';
 
-type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
-
-const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+const LoginScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +30,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       await login(email, password);
       // Mostrar mensaje de éxito
       Alert.alert(
-        '¡Bienvenido! 🎉', 
+        '¡Bienvenido! 🎉',
         'Has iniciado sesión correctamente',
         [
           {
@@ -43,7 +41,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       );
     } catch (error: any) {
       let errorMessage = 'Ocurrió un error al iniciar sesión';
-      
+
       // Manejo específico de errores de Firebase
       if (error.code) {
         switch (error.code) {
@@ -72,7 +70,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             errorMessage = error.message || 'Error desconocido';
         }
       }
-      
+
       Alert.alert('Error de inicio de sesión', errorMessage);
     } finally {
       setIsLoading(false);
@@ -117,13 +115,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <Text style={styles.title}>Mi Dulce Felisa</Text>
       <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
-      
+
       <TextInput
         style={styles.input}
         placeholder="Correo electrónico"
@@ -135,7 +133,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         autoComplete="email"
         editable={!isLoading}
       />
-      
+
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
@@ -146,16 +144,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         autoComplete="password"
         editable={!isLoading}
       />
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.forgotPasswordButton}
         onPress={handleForgotPassword}
         disabled={isLoading}
       >
         <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
         onPress={handleLogin}
         disabled={isLoading}
@@ -164,8 +162,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.registerButton}
         onPress={handleRegister}
         disabled={isLoading}

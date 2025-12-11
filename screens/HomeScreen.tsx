@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
+  Animated,
   Dimensions,
-  FlatList,
   Image,
   Linking,
   ScrollView,
@@ -11,21 +11,22 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_HEIGHT = 250;
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40;
 
 const HomeScreen: React.FC = () => {
-  const flatListRef = useRef<FlatList>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = React.useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
-  const images: number[] = [
+  const baseImages: number[] = [
     require('../assets/images/01_Bisnike.png'),
     require('../assets/images/02_Frutilla.png'),
     require('../assets/images/03_FrutillaYMerengue.png'),
-    require('../assets/images/04_Anime.png'), 
+    require('../assets/images/04_Anime.png'),
     require('../assets/images/05_Barbie.png'),
     require('../assets/images/06_BebesLlorones.png'),
     require('../assets/images/07_Comunion.png'),
@@ -82,69 +83,99 @@ const HomeScreen: React.FC = () => {
     require('../assets/images/58_Traje.png'),
   ];
 
+  // Duplicar primera imagen al final para loop suave
+  const images = [...baseImages, baseImages[0]];
+
   const socialMedia = [
     { name: 'Instagram', icon: 'logo-instagram', url: 'https://www.instagram.com/mi.dulce.felisa/?fbclid=IwY2xjawN-DXpleHRuA2FlbQIxMABicmlkETF6c2lKMXpYcG1zOVRzVHpSc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHoTtxOQ0iijZdsQX1SwlFeHtk_GC4MNLlgThqofjl2FCnl5Fd9MfSbxnlNOf_aem_Ftt39nMDXKLDHcxrBtLp7A', color: '#E4405F' },
     { name: 'Facebook', icon: 'logo-facebook', url: 'https://facebook.com/midulcefelisa', color: '#1877F2' },
-    { name: 'WhatsApp', icon: 'logo-whatsapp', url: 'https://wa.me/5491122334455', color: '#25D366' },
-    { name: 'YouTube', icon: 'logo-youtube', url: 'https://youtube.com/@midulcefelisa', color: '#FF0000' },
-    { name: 'Telegram', icon: 'send', url: 'https://t.me/midulcefelisa', color: '#0088cc' },
+    { name: 'WhatsApp', icon: 'logo-whatsapp', url: 'https://wa.me/5491165579801', color: '#25D366' },
   ];
 
   const handleSocialPress = (url: string) => {
-    Linking.openURL(url).catch(() => {});
+    Linking.openURL(url).catch(() => { });
   };
 
-  const scrollToIndex = (index: number) => {
-    flatListRef.current?.scrollToIndex({ animated: true, index });
-    setCurrentIndex(index);
-  };
+  // Función para hacer scroll suave con animación personalizada
+  const smoothScrollTo = useCallback((index: number) => {
+    const targetX = index * SCREEN_WIDTH;
+    scrollViewRef.current?.scrollTo({ x: targetX, animated: true });
+  }, []);
+
+  // Auto-scroll del carrusel cada 2 segundos con transición suave
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        const nextIndex = prevIndex + 1;
+
+        if (nextIndex >= images.length - 1) {
+          // Cuando llegamos a la imagen duplicada, hacer scroll suave
+          smoothScrollTo(nextIndex);
+
+          // Después de la animación, saltar silenciosamente al inicio
+          setTimeout(() => {
+            scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+          }, 600);
+
+          return 0;
+        } else {
+          smoothScrollTo(nextIndex);
+          return nextIndex;
+        }
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [images.length, smoothScrollTo]);
 
   const handleNext = () => {
-    const nextIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
-    scrollToIndex(nextIndex);
+    const nextIndex = currentIndex < baseImages.length - 1 ? currentIndex + 1 : 0;
+    smoothScrollTo(nextIndex);
+    setCurrentIndex(nextIndex);
   };
 
   const handlePrev = () => {
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
-    scrollToIndex(prevIndex);
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : baseImages.length - 1;
+    smoothScrollTo(prevIndex);
+    setCurrentIndex(prevIndex);
   };
 
   const onScroll = (event: any) => {
     const slideSize = event.nativeEvent.layoutMeasurement.width;
     const index = event.nativeEvent.contentOffset.x / slideSize;
     const roundIndex = Math.round(index);
-    setCurrentIndex(roundIndex);
+    if (roundIndex < baseImages.length) {
+      setCurrentIndex(roundIndex);
+    }
   };
-  
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Mi Dulce Felisa</Text>
-     
-      {/* Slide de Imágenes */}
+
+      {/* Carrusel de Imágenes */}
       <View style={styles.carouselContainer}>
-        <FlatList
-          ref={flatListRef}
-          data={images}
+        <ScrollView
+          ref={scrollViewRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(item, index) => index.toString()}
-          snapToInterval={SCREEN_WIDTH}
-          decelerationRate="fast"
-          contentContainerStyle={styles.flatListContent}
+          decelerationRate={0.9}
           onScroll={onScroll}
           scrollEventThrottle={16}
-          renderItem={({ item }: { item: number }) => (
-            <View style={styles.imageContainer}>
+          contentContainerStyle={styles.flatListContent}
+        >
+          {images.map((item, index) => (
+            <View key={index} style={styles.imageContainer}>
               <Image
                 source={item}
                 style={styles.galleryImage}
                 resizeMode="contain"
               />
             </View>
-          )}
-        />
-        
+          ))}
+        </ScrollView>
+
         {/* Flecha Izquierda */}
         <TouchableOpacity
           style={[styles.arrowButton, styles.leftArrow]}
@@ -161,39 +192,15 @@ const HomeScreen: React.FC = () => {
           <Ionicons name="chevron-forward" size={30} color="#FF69B4" />
         </TouchableOpacity>
       </View>
-      
+
       {/* Imagen adicional entre carrusel y mapa */}
       <Image
-        source={require('../assets/images/Mi_dulce.jpg')} 
+        source={require('../assets/images/Mi_dulce.jpg')}
         style={styles.middleImage}
         resizeMode="cover"
       />
-      
-      <Text style={styles.title2}>Encontranos acá 📍</Text>
-      
-      {/* Mapa de ubicación */}
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: -34.60973, 
-          longitude: -58.70009,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-      >
-        <Marker
-          coordinate={{
-            latitude: -34.60973,
-            longitude: -58.70009,
-          }}
-          title="Mi Dulce Felisa"
-          description="Pastelería artesanal"
-        />
-      </MapView>
-      
-      <Text style={styles.addressText}>
-        Pasaje N°1 4433, Villa Udaondo, Ituzaingó, Provincia de Buenos Aires
-      </Text>
+
+
 
       {/* Redes Sociales */}
       <View style={styles.socialContainer}>
@@ -211,7 +218,11 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      <Text style={styles.footer}>© 2025 Mi Dulce Felisa - Todos los derechos reservados</Text>
+      {/* Footer con ubicación */}
+      <View style={styles.footerContainer}>
+        <Text style={styles.footerLocation}>📍 Pasaje N°1 4433, Villa Udaondo, Ituzaingó, Provincia de Buenos Aires</Text>
+        <Text style={styles.footer}>© 2025 Mi Dulce Felisa - Todos los derechos reservados</Text>
+      </View>
     </ScrollView>
   );
 };
@@ -287,26 +298,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: 10,
     marginVertical: 10,
-    marginBottom: -30,
-  },
-  map: {
-    height: 300,
-    width: '90%',
-    alignSelf: 'center',
-    borderRadius: 10,
-    marginTop: 20,
     marginBottom: 20,
   },
-  addressText: {
-    fontSize: 14, 
-    fontWeight: 'bold', 
-    color: 'black', 
+  footerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    alignItems: 'center',
+  },
+  footerLocation: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
     textAlign: 'center',
-    top: -20, 
-    marginTop: 5,
+    marginBottom: 10,
   },
   socialContainer: {
-    marginTop: 10,
+    marginTop: 30,
     marginBottom: 20,
     paddingHorizontal: 20,
   },

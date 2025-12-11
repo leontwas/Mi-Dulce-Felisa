@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import {
@@ -11,8 +11,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../context/AuthContext';
+import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
 
 type MoreScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Más'>,
@@ -61,51 +61,37 @@ const MoreScreen: React.FC<Props> = ({ navigation }) => {
 
   const menuItems: MenuItem[] = user
     ? [
-        {
-          id: '3',
-          title: 'Crea tu Torta',
-          icon: 'create',
-          screen: 'CustomCake',
-          description: 'Personaliza tu torta ideal'
-        },
-        {
-          id: '4',
-          title: '¿Quiénes Somos?',
-          icon: 'information-circle',
-          screen: 'About',
-          description: 'Conoce nuestra historia'
-        },
-      ]
+      {
+        id: '4',
+        title: '¿Quiénes Somos?',
+        icon: 'information-circle',
+        screen: 'About',
+        description: 'Conoce nuestra historia'
+      },
+    ]
     : [
-        {
-          id: '1',
-          title: 'Iniciar Sesión',
-          icon: 'log-in',
-          screen: 'Login',
-          description: 'Accede a tu cuenta'
-        },
-        {
-          id: '2',
-          title: 'Registrarse',
-          icon: 'person-add',
-          screen: 'Register',
-          description: 'Crea una cuenta nueva'
-        },
-        {
-          id: '3',
-          title: 'Crea tu Torta',
-          icon: 'create',
-          screen: 'CustomCake',
-          description: 'Personaliza tu torta ideal'
-        },
-        {
-          id: '4',
-          title: '¿Quiénes Somos?',
-          icon: 'information-circle',
-          screen: 'About',
-          description: 'Conoce nuestra historia'
-        },
-      ];
+      {
+        id: '1',
+        title: 'Iniciar Sesión',
+        icon: 'log-in',
+        screen: 'Login',
+        description: 'Accede a tu cuenta'
+      },
+      {
+        id: '2',
+        title: 'Registrarse',
+        icon: 'person-add',
+        screen: 'Register',
+        description: 'Crea una cuenta nueva'
+      },
+      {
+        id: '4',
+        title: '¿Quiénes Somos?',
+        icon: 'information-circle',
+        screen: 'About',
+        description: 'Conoce nuestra historia'
+      },
+    ];
 
   const handleMenuPress = (screen: keyof RootStackParamList) => {
     navigation.navigate(screen as any);

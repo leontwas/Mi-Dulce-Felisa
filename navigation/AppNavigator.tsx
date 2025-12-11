@@ -1,32 +1,31 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 // Importar pantallas
 import AboutScreen from '../screens/AboutScreen';
-import CartScreen from '../screens/CartScreen';
 import ContactScreen from '../screens/ContactScreen';
 import CustomCakeScreen from '../screens/CustomCakeScreen';
+import GalleryScreen from '../screens/GalleryScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import MoreScreen from '../screens/MoreScreen';
-import ProductDetailScreen from '../screens/ProductDetailScreen';
-import ProductsScreen from '../screens/ProductsScreen';
+import ImageDetailScreen from '../screens/ProductDetailScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 
 // Definir tipos para los parámetros de navegación
 export type MainTabParamList = {
   Home: undefined;
-  Productos: undefined;
+  'Galería': undefined;
+  'Crea tu Torta': undefined;
   Contacto: undefined;
-  Carrito: undefined;
   'Más': undefined;
 };
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
-  ProductDetail: { cakeId: string };
+  ImageDetail: { imageId: string };
   Login: undefined;
   Register: undefined;
   About: undefined;
@@ -44,20 +43,22 @@ function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
+          // Caso especial para "Crea tu Torta" - usar MaterialCommunityIcons
+          if (route.name === 'Crea tu Torta') {
+            return <MaterialCommunityIcons name="cake-variant" size={size} color={color} />;
+          }
+
           let iconName: keyof typeof Ionicons.glyphMap;
 
           switch (route.name) {
             case 'Home':
               iconName = focused ? 'home' : 'home-outline';
               break;
-            case 'Productos':
-              iconName = focused ? 'fast-food' : 'fast-food-outline';
+            case 'Galería':
+              iconName = focused ? 'images' : 'images-outline';
               break;
             case 'Contacto':
               iconName = focused ? 'mail' : 'mail-outline';
-              break;
-            case 'Carrito':
-              iconName = focused ? 'cart' : 'cart-outline';
               break;
             case 'Más':
               iconName = focused ? 'menu' : 'menu-outline';
@@ -73,11 +74,51 @@ function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Productos" component={ProductsScreen} />
+      <Tab.Screen name="Galería" component={GalleryScreen} />
+      <Tab.Screen name="Crea tu Torta" component={CustomCakeScreen} />
       <Tab.Screen name="Contacto" component={ContactScreen} />
-      <Tab.Screen name="Carrito" component={CartScreen} />
-      <Tab.Screen name="Más" component={MoreScreen} />
+      <Tab.Screen name="Más" component={MoreStackNavigator} />
     </Tab.Navigator>
+  );
+}
+
+// Stack Navigator para la sección "Más" (permite About, Login, Register con tabs visibles)
+const MoreStack = createStackNavigator();
+
+function MoreStackNavigator() {
+  return (
+    <MoreStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#FF69B4',
+        },
+        headerTintColor: '#FFF',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <MoreStack.Screen
+        name="MoreMain"
+        component={MoreScreen}
+        options={{ headerShown: false }}
+      />
+      <MoreStack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{ title: '¿Quiénes Somos?' }}
+      />
+      <MoreStack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ title: 'Iniciar Sesión' }}
+      />
+      <MoreStack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={{ title: 'Registrarse' }}
+      />
+    </MoreStack.Navigator>
   );
 }
 
@@ -101,32 +142,9 @@ export default function AppNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
-        options={{ title: 'Detalle del Producto' }}
-      />
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ title: 'Iniciar Sesión' }}
-      />
-      <Stack.Screen
-        name="Register"
-        component={RegisterScreen}
-        options={{ title: 'Registrarse' }}
-      />
-      <Stack.Screen
-        name="About"
-        component={AboutScreen}
-        options={{ title: '¿Quiénes Somos?' }}
-      />
-      <Stack.Screen
-        name="CustomCake"
-        component={CustomCakeScreen}
-        options={{
-          title: 'Crea tu Torta',
-          headerShown: true
-        }}
+        name="ImageDetail"
+        component={ImageDetailScreen}
+        options={{ title: 'Detalle de la Imagen' }}
       />
     </Stack.Navigator>
   );

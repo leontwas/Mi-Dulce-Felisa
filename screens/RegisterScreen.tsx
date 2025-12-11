@@ -1,4 +1,4 @@
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -12,11 +12,9 @@ import {
   View
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { RootStackParamList } from '../navigation/AppNavigator';
 
-type RegisterScreenProps = NativeStackScreenProps<RootStackParamList, 'Register'>;
-
-const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
+const RegisterScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -74,7 +72,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       navigation.navigate('MainTabs');
     } catch (error: any) {
       let errorMessage = 'Ocurrió un error al registrar la cuenta';
-      
+
       if (error.code) {
         switch (error.code) {
           case 'auth/email-already-in-use':
@@ -90,7 +88,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             errorMessage = error.message;
         }
       }
-      
+
       Alert.alert('Error de Registro', errorMessage);
     } finally {
       setIsLoading(false);
@@ -102,13 +100,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>Crear Cuenta</Text>
-        
+
         <TextInput
           style={styles.input}
           placeholder="Nombre Completo"
@@ -117,7 +115,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           autoCapitalize="words"
           editable={!isLoading}
         />
-        
+
         <TextInput
           style={styles.input}
           placeholder="Correo Electrónico"
@@ -154,7 +152,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           secureTextEntry
           editable={!isLoading}
         />
-        
+
         <TextInput
           style={styles.input}
           placeholder="Confirmar Contraseña"
@@ -163,8 +161,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           secureTextEntry
           editable={!isLoading}
         />
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.registerButton}
           onPress={handleRegister}
           disabled={isLoading}
@@ -173,7 +171,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             {isLoading ? 'Registrando...' : 'Registrarse'}
           </Text>
         </TouchableOpacity>
-        
+
         <View style={styles.loginContainer}>
           <Text style={styles.loginText}>¿Ya tienes una cuenta? </Text>
           <TouchableOpacity onPress={handleLogin}>

@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,8 +15,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { CustomCakeData } from '../types';
 
 type CustomCakeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CustomCake'>;
 
@@ -30,63 +31,52 @@ const SIZES = [
 const CAKE_TYPES = [
   'Vainilla',
   'Chocolate',
-  'Red Velvet',
-  'Vainilla y Chocolate',
-  'Limón',
-  'Naranja',
-  'Zanahoria',
+  'Mixto (2 vainilla + 1 chocolate)',
+  'Mixto (2 chocolate + 1 vainilla)',
 ];
 
 const FILLINGS = [
-  'Dulce de Leche',
-  'Crema Pastelera',
-  'Mousse de Chocolate',
-  'Mousse de Frutilla',
+  'Ganache Semi Amargo',
+  'Ganache Blanco',
+  'Crema Frutos del Bosque',
+  'Crema con Frutillas',
+  'Crema con Durazno',
+  'Crema de Frutilla',
   'Crema Chantilly',
-  'Mermelada de Frutilla',
-  'Mermelada de Durazno',
-  'Nutella',
-  'Crema de Limón',
-  'Crema de Maracuyá',
-  'Trufa de Chocolate',
-  'Ganache',
+  'Dulce de Leche Chocotorta',
+  'Dulce de Leche Solo',
+  'Crema Oreo',
+  'Crema Moka (café)',
+  'Crema Bariloche (mousse chocolate + dulce de leche)',
+  'Crema Dos Corazones',
+  'Mousse de Chocolate',
+];
+
+const EXTRAS = [
+  'Chips de Chocolate Blanco',
+  'Chips de Chocolate Semi Amargo',
+  'Merenguitos',
+  'Mantecol',
+  'Pedacitos de Chocolate Shot',
 ];
 
 const FROSTINGS = [
-  'Buttercream',
   'Fondant',
   'Crema Chantilly',
-  'Merengue Suizo',
-  'Ganache de Chocolate',
-  'Crema de Mantequilla',
-  'Glaseado de Chocolate',
-  'Glaseado de Vainilla',
-  'Cobertura de Dulce de Leche',
-  'Cobertura Espejo',
-];
-
-const DECORATIONS = [
-  'Flores de Azúcar',
-  'Frutas Frescas',
-  'Chocolate Rallado',
-  'Perlas Comestibles',
-  'Mariposas de Oblea',
-  'Toppers Personalizados',
-  'Rocklets',
-  'Confeti de Chocolate',
-  'Estrellas Doradas',
-  'Figuritas de Fondant',
+  'Buttercream',
+  'Ganache',
 ];
 
 const CustomCakeScreen: React.FC = () => {
   const navigation = useNavigation<CustomCakeScreenNavigationProp>();
+  const { user } = useAuth();
 
   // Estados del formulario
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedCakeType, setSelectedCakeType] = useState('');
   const [selectedFillings, setSelectedFillings] = useState<string[]>([]);
-  const [selectedFrostings, setSelectedFrostings] = useState<string[]>([]);
-  const [selectedDecorations, setSelectedDecorations] = useState<string[]>([]);
+  const [selectedFrosting, setSelectedFrosting] = useState('');
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const [theme, setTheme] = useState('');
   const [name, setName] = useState('');
@@ -101,6 +91,18 @@ const CustomCakeScreen: React.FC = () => {
   // Estados para opción de envío/retiro
   const [deliveryOption, setDeliveryOption] = useState<'delivery' | 'pickup'>('pickup');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+
+  // Autocompletar datos si el usuario está logueado
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      if (user.address) {
+        setDeliveryAddress(user.address);
+      }
+    }
+  }, [user]);
 
   // Función para manejar el cambio de fecha
   const onDateChange = (event: any, selectedDate?: Date) => {
@@ -153,8 +155,12 @@ const CustomCakeScreen: React.FC = () => {
       Alert.alert('Error', 'Por favor, selecciona al menos un relleno');
       return false;
     }
-    if (selectedFrostings.length === 0) {
-      Alert.alert('Error', 'Por favor, selecciona al menos una cobertura');
+    if (selectedFillings.length > 2) {
+      Alert.alert('Error', 'Solo puedes seleccionar hasta 2 rellenos');
+      return false;
+    }
+    if (!selectedFrosting) {
+      Alert.alert('Error', 'Por favor, selecciona una cobertura');
       return false;
     }
     if (!deliveryDate) {
@@ -188,7 +194,7 @@ const CustomCakeScreen: React.FC = () => {
     return true;
   };
 
-  // Enviar formulario
+  // Enviar por WhatsApp
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
@@ -198,83 +204,62 @@ const CustomCakeScreen: React.FC = () => {
 
     const sizeData = SIZES.find(s => s.value === selectedSize);
 
-    const customCakeData: CustomCakeData = {
-      size: selectedSize,
-      servings: sizeData?.servings || 0,
-      fillings: selectedFillings,
-      frostings: selectedFrostings,
-      decorations: selectedDecorations,
-      message,
-      theme,
-      name,
-      email,
-      phone,
-      deliveryOption,
-    };
+    // Número de WhatsApp de la tienda (formato internacional sin + ni espacios)
+    const whatsappNumber = '5491165579801';
 
-    // Formatear el mensaje para el email
-    const emailBody = `
-NUEVA SOLICITUD DE TORTA PERSONALIZADA
+    // Formatear el mensaje para WhatsApp
+    const whatsappMessage = `
+🎂 *SOLICITUD DE TORTA PERSONALIZADA*
 ======================================
 
-DATOS DEL CLIENTE:
-------------------
-Nombre: ${customCakeData.name}
-Email: ${customCakeData.email}
-Teléfono: ${customCakeData.phone || 'No proporcionado'}
+👤 *DATOS DEL CLIENTE:*
+• Nombre: ${name}
+• Email: ${email}
+• Teléfono: ${phone || 'No proporcionado'}
 
-FECHA DE ENTREGA SOLICITADA:
------------------------------
-📅 ${deliveryDate ? formatDate(deliveryDate) : 'No especificada'}
+📅 *FECHA DE ENTREGA:*
+${deliveryDate ? formatDate(deliveryDate) : 'No especificada'}
 
-MODALIDAD DE ENTREGA:
----------------------
-${deliveryOption === 'delivery' ? '🚚 Envío a domicilio' : '🏪 Retiro en tienda'}
-${deliveryOption === 'delivery' ? `Dirección: ${deliveryAddress}` : ''}
+🚚 *MODALIDAD DE ENTREGA:*
+${deliveryOption === 'delivery' ? '🏠 Envío a domicilio' : '🏪 Retiro en tienda'}
+${deliveryOption === 'delivery' ? `📍 Dirección: ${deliveryAddress}` : ''}
 
-DETALLES DE LA TORTA:
-----------------------
-Tamaño: ${sizeData?.cm} cm (${customCakeData.servings} porciones)
-Tipo de Biscochuelo: ${selectedCakeType}
+🍰 *DETALLES DE LA TORTA:*
+• Tamaño: ${sizeData?.cm} cm (${sizeData?.servings} porciones)
+• Biscochuelo: ${selectedCakeType}
 
-Rellenos:
-${customCakeData.fillings.map(f => `  • ${f}`).join('\n')}
+🥄 *Rellenos (2):*
+${selectedFillings.map(f => `  • ${f}`).join('\n')}
 
-Coberturas:
-${customCakeData.frostings.map(f => `  • ${f}`).join('\n')}
+🎨 *Cobertura:*
+  • ${selectedFrosting}
 
-Decoraciones:
-${customCakeData.decorations.length > 0
-  ? customCakeData.decorations.map(d => `  • ${d}`).join('\n')
-  : '  • Ninguna'}
+✨ *Extras:*
+${selectedExtras.length > 0
+        ? selectedExtras.map(e => `  • ${e}`).join('\n')
+        : '  • Ninguno'}
 
-Mensaje en la torta: ${customCakeData.message || 'Sin mensaje'}
-Temática: ${customCakeData.theme || 'No especificada'}
+💬 *Mensaje en la torta:* ${message || 'Sin mensaje'}
+🎨 *Temática:* ${theme || 'No especificada'}
 
 ======================================
-NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular presupuesto.
-    `;
+¡Espero su presupuesto! 💕
+    `.trim();
+
+    // Codificar el mensaje para URL
+    const encodedMessage = encodeURIComponent(whatsappMessage);
+    const whatsappUrl = `whatsapp://send?phone=${whatsappNumber}&text=${encodedMessage}`;
 
     try {
-      const formData = new FormData();
-      formData.append('name', customCakeData.name);
-      formData.append('email', customCakeData.email);
-      formData.append('phone', customCakeData.phone);
-      formData.append('message', emailBody);
-      formData.append('_subject', 'Nueva Solicitud de Torta Personalizada');
+      const supported = await Linking.canOpenURL(whatsappUrl);
 
-      const response = await fetch('https://formspree.io/f/xdkynknn', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json'
-        },
-        body: formData
-      });
+      if (supported) {
+        await Linking.openURL(whatsappUrl);
 
-      if (response.ok) {
+        // Mostrar mensaje de éxito después de abrir WhatsApp
         Alert.alert(
-          '✅ Solicitud Enviada',
-          'Tu solicitud de torta personalizada ha sido enviada correctamente.\n\nNos pondremos en contacto contigo pronto para confirmar la disponibilidad y el presupuesto.\n\n¡Gracias por confiar en nosotros!',
+          '✅ ¡Perfecto!',
+          'Se abrió WhatsApp con tu solicitud. Envía el mensaje para que la tienda te pase el presupuesto.',
           [
             {
               text: 'OK',
@@ -283,8 +268,8 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
                 setSelectedSize('');
                 setSelectedCakeType('');
                 setSelectedFillings([]);
-                setSelectedFrostings([]);
-                setSelectedDecorations([]);
+                setSelectedFrosting('');
+                setSelectedExtras([]);
                 setMessage('');
                 setTheme('');
                 setDeliveryDate(undefined);
@@ -302,12 +287,14 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
           ]
         );
       } else {
-        const responseData = await response.json();
-        const errorMessage = responseData.error || 'Hubo un problema al enviar la solicitud';
-        Alert.alert('Error', errorMessage);
+        Alert.alert(
+          'WhatsApp no disponible',
+          'No se pudo abrir WhatsApp. Asegúrate de tener la aplicación instalada.',
+          [{ text: 'OK' }]
+        );
       }
-    } catch {
-      Alert.alert('Error', 'No se pudo enviar la solicitud. Verifica tu conexión a internet');
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo abrir WhatsApp. Intenta nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -390,7 +377,7 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
         {/* Rellenos */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            <Ionicons name="heart" size={20} color="#FF69B4" /> Rellenos (seleccione hasta 3)
+            <Ionicons name="heart" size={20} color="#FF69B4" /> Rellenos (seleccione 2)
           </Text>
           <View style={styles.chipContainer}>
             {FILLINGS.map((filling) => (
@@ -400,7 +387,7 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
                   styles.chip,
                   selectedFillings.includes(filling) && styles.chipSelected
                 ]}
-                onPress={() => toggleSelection(filling, selectedFillings, setSelectedFillings, 3)}
+                onPress={() => toggleSelection(filling, selectedFillings, setSelectedFillings, 2)}
                 disabled={isSubmitting}
               >
                 <View style={styles.chipContent}>
@@ -419,10 +406,10 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
           </View>
         </View>
 
-        {/* Coberturas */}
+        {/* Cobertura */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            <Ionicons name="color-palette" size={20} color="#FF69B4" /> Coberturas (seleccione hasta 3)
+            <Ionicons name="color-palette" size={20} color="#FF69B4" /> Cobertura *
           </Text>
           <View style={styles.chipContainer}>
             {FROSTINGS.map((frosting) => (
@@ -430,19 +417,19 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
                 key={frosting}
                 style={[
                   styles.chip,
-                  selectedFrostings.includes(frosting) && styles.chipSelected
+                  selectedFrosting === frosting && styles.chipSelected
                 ]}
-                onPress={() => toggleSelection(frosting, selectedFrostings, setSelectedFrostings, 3)}
+                onPress={() => setSelectedFrosting(frosting)}
                 disabled={isSubmitting}
               >
                 <View style={styles.chipContent}>
                   <Text style={[
                     styles.chipText,
-                    selectedFrostings.includes(frosting) && styles.chipTextSelected
+                    selectedFrosting === frosting && styles.chipTextSelected
                   ]}>
                     {frosting}
                   </Text>
-                  {selectedFrostings.includes(frosting) && (
+                  {selectedFrosting === frosting && (
                     <Ionicons name="checkmark-circle" size={18} color="#FFF" style={styles.checkIcon} />
                   )}
                 </View>
@@ -451,30 +438,30 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
           </View>
         </View>
 
-        {/* Decoraciones */}
+        {/* Extras */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            <Ionicons name="star" size={20} color="#FF69B4" /> Decoraciones (seleccione hasta 3)
+            <Ionicons name="star" size={20} color="#FF69B4" /> Extras (opcional)
           </Text>
           <View style={styles.chipContainer}>
-            {DECORATIONS.map((decoration) => (
+            {EXTRAS.map((extra) => (
               <TouchableOpacity
-                key={decoration}
+                key={extra}
                 style={[
                   styles.chip,
-                  selectedDecorations.includes(decoration) && styles.chipSelected
+                  selectedExtras.includes(extra) && styles.chipSelected
                 ]}
-                onPress={() => toggleSelection(decoration, selectedDecorations, setSelectedDecorations, 3)}
+                onPress={() => toggleSelection(extra, selectedExtras, setSelectedExtras, 5)}
                 disabled={isSubmitting}
               >
                 <View style={styles.chipContent}>
                   <Text style={[
                     styles.chipText,
-                    selectedDecorations.includes(decoration) && styles.chipTextSelected
+                    selectedExtras.includes(extra) && styles.chipTextSelected
                   ]}>
-                    {decoration}
+                    {extra}
                   </Text>
-                  {selectedDecorations.includes(decoration) && (
+                  {selectedExtras.includes(extra) && (
                     <Ionicons name="checkmark-circle" size={18} color="#FFF" style={styles.checkIcon} />
                   )}
                 </View>
@@ -677,16 +664,16 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
 
-          {/* Botón enviar */}
+          {/* Botón enviar por WhatsApp */}
           <TouchableOpacity
             style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
+            {!isSubmitting && <Ionicons name="logo-whatsapp" size={20} color="#FFF" style={styles.submitIcon} />}
             <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+              {isSubmitting ? 'Abriendo WhatsApp...' : 'Pedir Presupuesto'}
             </Text>
-            {!isSubmitting && <Ionicons name="send" size={20} color="#FFF" style={styles.submitIcon} />}
           </TouchableOpacity>
         </View>
 
@@ -694,7 +681,7 @@ NOTA: Por favor, confirmar disponibilidad para la fecha solicitada y calcular pr
           * Campos obligatorios. Nos pondremos en contacto contigo para confirmar los detalles y el precio.
         </Text>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoidingView >
   );
 };
 

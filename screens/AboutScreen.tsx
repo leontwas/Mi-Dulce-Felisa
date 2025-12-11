@@ -5,31 +5,16 @@ const AboutScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Quienes Somos</Text>
-      
-   <Image 
-     source={require('../assets/images/bakery.jpg')} 
-     style={styles.heroImage} 
-    />
-      
+
+      <Image
+        source={require('../assets/images/bakery.jpg')}
+        style={styles.heroImage}
+      />
+
       <Text style={styles.description}>
-        Mi Dulce Felisa nació de la pasión por la repostería artesanal. 
-        Fundada en 2015, nuestra misión es crear los postres más deliciosos 
-        y memorables para cada ocasión especial.
-      </Text>
-      
-      <Text style={styles.subtitle}>Nuestra Historia</Text>
-      <Text style={styles.paragraph}>
-        Todo comenzó en la cocina de nuestra fundadora, quien desde niña 
-        soñaba con crear los pasteles más deliciosos. Con recetas familiares 
-        transmitidas por generaciones y un amor incondicional por la repostería, 
-        Mi Dulce Felisa se convirtió en realidad.
-      </Text>
-      
-      <Text style={styles.subtitle}>Nuestro Compromiso</Text>
-      <Text style={styles.paragraph}>
-        Nos dedicamos a utilizar los ingredientes más frescos y de la más alta 
-        calidad. Cada torta es preparada con dedicación, cariño y atención 
-        al más mínimo detalle.
+        En plena pandemia, nació Mi Dulce Felisa, un emprendimiento dulce y acogedor
+        que se especializa en crear deliciosas tortas, panes, facturas y mucho más,
+        llevando un toque de amor y calidez a cada bocado.
       </Text>
     </ScrollView>
   );
